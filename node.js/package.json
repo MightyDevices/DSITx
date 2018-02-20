@@ -1,0 +1,24 @@
+{
+  "name": "mipi",
+  "version": "1.0.0",
+  "description": "sends test bitmaps over serial port to Lattice MachXO2 board",
+  "main": "index.js",
+  "dependencies": {
+    "bmp-js": "^0.0.3",
+    "serialport": "^6.0.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MightyDevices/DSITx.git"
+  },
+  "author": "Tomasz Watorowski",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MightyDevices/DSITx/issues"
+  },
+  "homepage": "https://github.com/MightyDevices/DSITx#readme"
+}
