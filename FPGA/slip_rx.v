@@ -31,54 +31,40 @@ localparam CHAR_ESC		= 8'hDB;
 localparam CHAR_ESC_END	= 8'hDC;
 localparam CHAR_ESC_ESC = 8'hDD;
 
-
 /* current state */
-reg [1:0] state = SOF;
-/* comparison registers, process byte flag */
-reg is_end, is_esc, is_esc_end, process_byte;
+reg [1:0] state;
 /* buffered version of data */
 reg [7:0] din_buf;
 
 /* synchronous logic */
 always @ (posedge clk or posedge rst)
 begin
-	/* reset asserted? */
+	/* reset logic */
 	if (rst) begin
 		state <= SOF; frame <= 1'b0;
-		is_end <= 0; is_esc <= 0; is_esc_end <= 0; 
-		process_byte <= 0; din_buf <= 0;
 		dout_rdy <= 0; dout <= 0;
 	/* normal operation */
 	end else begin
-		/* store data */
-		din_buf <= din;
-		/* update byte checkers */
-		is_end <= din == CHAR_END;
-		is_esc <= din == CHAR_ESC;
-		is_esc_end <= din == CHAR_ESC_END;
-		/* process flag */
-		process_byte <= din_rdy;
-		/* clear ready flag after byte has been read */
-		if (dout_rdy && dout_ack)
-			dout_rdy <= 1'b0;	
-		
-		/* time to process byte? */
-		if (process_byte) begin
+		/* clear flag */
+		if (dout_ack)
+			dout_rdy <= 1'b0;
+			
+		/* time to process data? */
+		if (din_rdy) begin
 			/* slip state machine */
 			case (state)
 			/* wait for sof */
 			SOF : begin
+				dout <= din; 
 				/* start of frame received */
-				if (is_end)
+				if (din == CHAR_END)
 					state <= READ;
 			end
 			/* normal operation */
 			READ : begin
-				/* i know that this is nasty, but one shoud read the data as 
-				 * soon as rdy is set high */
-				dout <= din_buf; 
+				dout <= din; 
 				/* got ending character? */
-				if (is_end) begin
+				if (din == CHAR_END) begin
 					/* prevent multiple consecutive 0xc0 */
 					if (frame) begin
 						frame <= 1'b0; state <= SOF;
@@ -88,7 +74,7 @@ begin
 					/* we are now in the middle of the frame */
 					frame <= 1'b1;
 					/* got an escape character? */
-					if (is_esc) begin
+					if (din == CHAR_ESC) begin
 						state <= ESC;
 					/* normal character */
 					end else begin
@@ -99,7 +85,7 @@ begin
 			/* escape */
 			ESC : begin
 				/* store decoded character */
-				dout <= is_esc_end ? CHAR_END : CHAR_ESC;
+				dout <= din == CHAR_ESC_END ? CHAR_END : CHAR_ESC;
 				/* go back to 'normal' data reading */
 				state <= READ; dout_rdy <= 1'b1;
 			end

@@ -7,13 +7,13 @@ module reset (
 ) /* synthesis GSR=ENABLED */;
 
 /* reset counter */
-reg [7:0] cnt = 0;
+reg [1:0] cnt = 0;
 
 /* logic */
 always @ (posedge clk)
 begin
 	/* reset counter */
-	if (cnt != 8'hFF) begin
+	if (cnt != 2'b11) begin
 		/* increment reset */
 		cnt <= cnt + 1'b1;
 		/* keep the reset signal asserted */

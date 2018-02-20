@@ -1,69 +1,29 @@
 `timescale 1 ns / 1 ns
 
 module top_tb;
-	
-/* clock */
-reg clk;
-/* rxd line */
-reg rxd;
-/* wires */
-wire [7:0] uart_rx_data, slip_rx_dout;
+
+reg rxd, clk, rst;
+wire txd;
+/* integers */
+integer i = 0, clk_per = 1000 / (2.08);
+
 /* data size */
-localparam MSG_SIZE = 4;
-/* message */
-reg [MSG_SIZE * 8 - 1 : 0] message = {
-	8'hc0, 8'hdb, 8'hdc, 8'hc0
+localparam MSG_SIZE = 7;
+/* message to be received */
+
+reg [MSG_SIZE*8-1:0] message = {	
+	8'hc0,
+	8'hF0,
+	8'h19,
+	8'hDB,
+	8'hDC,
+	8'h7F,
+	8'hc0
 };
 
-/* power on reset */
-PUR PUR_INST(.PUR(1'b1));
-/* global set reset */
-GSR GSR_INST(.GSR(1'b1));
+/* top module instance */
+top dut( .rxd(rxd) );
 
-/* power on reset counter */
-reset reset_i (.clk(clk), .rst(rst));
-
-/* uart interface: 130kbouds */
-uart_rx # (.BDIV(4)) uart_rx_i(
-	/* clock line */
-	.clk(clk), .rst(rst),
-	/* input line */
-	.rxd(rxd), 
-	/* received data */
-	.data(uart_rx_data), .rdy(uart_rx_rdy), .ack(1'b1)
-);
-
-/* slip receiver */
-slip_rx slip_rx_i(
-	/* clock line */
-	.clk(clk), .rst(rst),
-	/* decoded data for mipi block */
-	.frame(slip_rx_frame), .dout(slip_rx_dout), .dout_rdy(slip_rx_dout_rdy), 
-	.dout_ack(mipi_d_ack),
-	/* encoded data from uart receiver */
-	.din(uart_rx_data), .din_rdy(uart_rx_rdy)
-);
-
-/* mipi instance */
-mipi mipi_i(
-	/* quadrature clocks */
-	.clk(clk), .rst(rst),
-	/* high speed lines */
-	.d_hs(d_hs), .c_hs(c_hs),
-	/* low speed signals */
-	.d_lp_p(d_lp_p), .d_lp_n(d_lp_n),
-	.c_lp_p(c_lp_p), .c_lp_n(c_lp_n),
-	
-	/* data bus interface */
-	.d_in(slip_rx_dout), .d_req(slip_rx_dout_rdy),
-	/* data ack */
-	.d_ack(mipi_d_ack),
-	/* frame signal */
-	.b_req(slip_rx_frame)
-);
-	
-/* integers */
-integer i = 0;
 
 /* send byte on serial bus (baudrate set by bdiv) */
 task send_byte;
@@ -87,22 +47,23 @@ endtask
 
 initial
 begin
+	/* reset */
+	rst = 1; #clk_per;
 	/* initial conditions */
-	clk = 0; rxd = 1;
-	/* wait for reset sequence to complete */
-	wait (!rst);
+	rst = 0; clk = 0; rxd = 1;
+	#(clk_per*256);
 	/* produce message on rxd line */
-	for (i = MSG_SIZE - 1; i >= 0; i = i - 1)
-		send_byte(message[8*(i) +: 8], 32);
-
-	/* end simulation after this delay */
-	#5000;
+	for (i = 0; i < MSG_SIZE; i = i + 1)
+		send_byte(message[8*(MSG_SIZE-i-1) +: 8], 8*clk_per*4);
 	
+	/* end simulation after this delay */
+	#(481*5000);
 	/* end simulation */
 	$finish;
 end
 
+
 /* toggle clock */
-always #1 clk = !clk;
+always #(clk_per / 2) clk = !clk;
 
 endmodule
