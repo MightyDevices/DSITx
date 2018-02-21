@@ -3,6 +3,8 @@ FPGA implementation of DSITx (single lane) used in conjunction with ipod nano 7t
 
 This is a generic (behavioral) code for MIPI DSI Tx. Can drive the Ipod Nano 7th gen LCD display without a problems. Developed on Lattice MachXO2 dev board (the one with 7000HE).
 
+For more information please go to http://mightydevices.com/?p=681
+
 Operation
 --------------
 1. FPGA reads bytes from on-board FTDI chip (one port used as USART, other one is for programming the FPGA - obviously)
